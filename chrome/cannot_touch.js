@@ -35,16 +35,13 @@ var obj = {
 
 //console.log(name);
 // console.log(time_start);
-
-chrome.storage.local.get({
-        name:name,
-        record : array
-    }, function(items) {
-        //console.log(items);
-        //items.name = '2018-08-29';
+chrome.storage.local.get(['name','record'], function(items) {
+        console.log(items);
+        // items.name = '2019-07-14';
         if(items.name != name){
             httpRequest('https://www.why-dong.com/util/browsingHistory',items,showText);
         }
+
     })
 
 
@@ -81,37 +78,40 @@ window.addEventListener('beforeunload',function(event){
 
 function setData(){
     var time_end = (new Date()).getTime();
-        chrome.storage.local.get({
-            name : name,
-            record : array
-        }, function(items) {
-            //console.log(items);
-            for(var i = 0;i < items.record.length;i++){
-                 // console.log(obj.title,items.record[i].title);
-                if(obj.url == items.record[i].url){
-                    k = i;
-                    obj.click = items.record[i].click + 1;
-                    obj.time = items.record[i].time + time_end - time_start;
-                    find_flag = true;
-                    break;
-                }
+    chrome.storage.local.get(['name','record'], function(items) {
+        console.log(items);
+        if ( !items.name || !items.record ) {
+            items = {
+                name: name,
+                record: []
             }
-
-
-            if(find_flag){
-                items.record[k] = obj;
-            }else{
-                obj.title = document.title;
-                obj.click = 1;
-                obj.url = location.href;
-                obj.time = time_end - time_start;
-                items.record.push(obj);
+        }
+        for(var i = 0;i < items.record.length;i++){
+             // console.log(obj.title,items.record[i].title);
+            if(obj.url == items.record[i].url){
+                k = i;
+                obj.click = items.record[i].click + 1;
+                obj.time = items.record[i].time + time_end - time_start;
+                find_flag = true;
+                break;
             }
+        }
 
-            chrome.storage.local.set({name:name,record:items.record}, function() {
-                // console.log('保存成功！');
-            });
+
+        if(find_flag){
+            items.record[k] = obj;
+        }else{
+            obj.title = document.title;
+            obj.click = 1;
+            obj.url = location.href;
+            obj.time = time_end - time_start;
+            items.record.push(obj);
+        }
+
+        chrome.storage.local.set({name:name,record:items.record}, function() {
+            // console.log('保存成功！');
         });
+    });
 }
 
 function httpRequest(url,data,callback){
@@ -120,7 +120,7 @@ function httpRequest(url,data,callback){
     xhr.setRequestHeader("Content-type","application/json");
     xhr.onreadystatechange = function(){
         if(xhr.readyState == 4){
-            callback(xhr.responseText);
+            callback(xhr.status);
         }
     }
      // data = (function(obj){ // 转成post需要的字符串
@@ -135,11 +135,9 @@ function httpRequest(url,data,callback){
 }
 
 function showText(result){
-    result = JSON.parse(result);
-    if(result.code == 200){
+    if(result == 200 || result=='200'){
         chrome.storage.local.clear(function(){});
     }
-    console.log(result);
 }
 
 function fmtDate(obj){
